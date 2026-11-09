@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { Parser } = require('expr-eval');
+const { evaluate: safeEvaluate } = require('../../safeMath');
 const { embed, errorEmbed, pick, rand } = require('../../utils');
 
 const ROASTS = [
@@ -86,7 +86,7 @@ module.exports = {
     }
     if (sub === 'math') {
       try {
-        const result = Parser.evaluate(interaction.options.getString('expression'));
+        const result = safeEvaluate(interaction.options.getString('expression'));
         return interaction.reply({ embeds: [embed('🧮 Math', `\`${interaction.options.getString('expression')}\` = **${result}**`)] });
       } catch {
         return interaction.reply({ embeds: [errorEmbed('Invalid expression.')], ephemeral: true });
