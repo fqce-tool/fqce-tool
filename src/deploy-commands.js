@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const config = require('./config');
 
-const GUILD_ONLY_COMMANDS = new Set(['customize', 'family', 'giveaway', 'staff']);
+const GUILD_ONLY_COMMANDS = new Set(['customize', 'family', 'giveaway']);
 const commands = [];
 const commandsPath = path.join(__dirname, 'commands');
 for (const dir of fs.readdirSync(commandsPath)) {
