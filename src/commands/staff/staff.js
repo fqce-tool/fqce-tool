@@ -22,8 +22,16 @@ module.exports = {
   async execute(interaction, client) {
     const sub = interaction.options.getSubcommand();
     const gid = interaction.guildId;
+    const isOwner = !!config.ownerId && interaction.user.id === config.ownerId;
+    const inInstalledGuild = interaction.inGuild() && !!interaction.guild;
+
+    // Outside a server the app can be user-installed by anyone, so only the bot owner may use staff commands there.
+    if (!inInstalledGuild && !isOwner)
+      return interaction.reply({ embeds: [errorEmbed('Bot owner only.')], ephemeral: true });
 
     if (sub === 'lock' || sub === 'unlock') {
+      if (!inInstalledGuild)
+        return interaction.reply({ content: 'That subcommand is only available in a server.', ephemeral: true });
       const cmd = interaction.options.getString('command').replace(/^\//, '').toLowerCase();
       if (sub === 'lock') {
         db.prepare('INSERT OR REPLACE INTO locked_commands (guild_id, command) VALUES (?, ?)').run(gid, cmd);
@@ -57,11 +65,11 @@ module.exports = {
     }
 
     if (sub === 'blacklist') {
-      if (!config.ownerId || interaction.user.id !== config.ownerId)
+      if (!isOwner)
         return interaction.reply({ embeds: [errorEmbed('Bot owner only.')], ephemeral: true });
       const action = interaction.options.getString('action');
       const id = interaction.options.getString('id');
-      const kind = id === gid ? 'guild' : 'user';
+      const kind = gid && id === gid ? 'guild' : 'user';
       if (action === 'add') {
         db.prepare('INSERT OR REPLACE INTO blacklist (id, kind, reason) VALUES (?, ?, ?)').run(id, kind, interaction.options.getString('reason') || null);
         return interaction.reply({ embeds: [successEmbed(`Blacklisted ${kind} \`${id}\`.`)], ephemeral: true });
