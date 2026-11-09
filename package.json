@@ -1,0 +1,24 @@
+{
+  "name": "fqce-tool",
+  "version": "1.0.0",
+  "description": "Fqce Tool - a Discord bot with economy, games, fun, social and utility commands (Heist-style feature set)",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "check": "node --check src/index.js"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7",
+    "expr-eval": "^2.0.2",
+    "gifwrap": "^0.10.1",
+    "jimp": "^0.22.12",
+    "node-fetch": "^2.7.0"
+  }
+}
