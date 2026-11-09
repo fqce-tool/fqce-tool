@@ -67,6 +67,18 @@ client.on('interactionCreate', async (interaction) => {
         }
       }
 
+      // A few subcommands depend on a server ID and cannot run in DMs.
+      if (!interaction.inGuild()) {
+        const subcommand = interaction.options.getSubcommand(false);
+        const subcommandGroup = interaction.options.getSubcommandGroup(false);
+        const serverOnlySubcommand =
+          (interaction.commandName === 'info' && subcommand === 'serverinfo') ||
+          (interaction.commandName === 'util' && (subcommand === 'afk' || subcommandGroup === 'tags'));
+        if (serverOnlySubcommand) {
+          return interaction.reply({ content: 'That subcommand is only available in a server.', ephemeral: true });
+        }
+      }
+
       await command.execute(interaction, client);
       return;
     }
