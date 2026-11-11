@@ -23,7 +23,12 @@ module.exports = {
     .addSubcommandGroup(g => g.setName('tiktok').setDescription('TikTok lookups')
       .addSubcommand(s => s.setName('user').setDescription('View TikTok user info').addStringOption(o => o.setName('username').setDescription('TikTok username').setRequired(true))))
     .addSubcommandGroup(g => g.setName('youtube').setDescription('YouTube lookups')
-      .addSubcommand(s => s.setName('search').setDescription('Search YouTube videos').addStringOption(o => o.setName('query').setDescription('Search').setRequired(true)))),
+      .addSubcommand(s => s.setName('search').setDescription('Search YouTube videos').addStringOption(o => o.setName('query').setDescription('Search').setRequired(true))))
+    .addSubcommandGroup(g => g.setName('twitch').setDescription('Twitch lookups')
+      .addSubcommand(s => s.setName('user').setDescription('View Twitch channel info').addStringOption(o => o.setName('username').setDescription('Twitch username').setRequired(true)))
+      .addSubcommand(s => s.setName('avatar').setDescription("View a Twitch user's avatar").addStringOption(o => o.setName('username').setDescription('Twitch username').setRequired(true))))
+    .addSubcommandGroup(g => g.setName('github').setDescription('GitHub lookups')
+      .addSubcommand(s => s.setName('user').setDescription('View GitHub user info').addStringOption(o => o.setName('username').setDescription('GitHub username').setRequired(true)))),
 
   async execute(interaction) {
     const group = interaction.options.getSubcommandGroup();
@@ -99,6 +104,50 @@ module.exports = {
           `**Likes:** ${stats?.heartCount?.toLocaleString() ?? '?'}`,
           `**Videos:** ${stats?.videoCount?.toLocaleString() ?? '?'}`,
         ].filter(Boolean).join('\n')).setThumbnail(u.avatarLarger || null)] });
+      }
+    }
+
+    if (group === 'twitch') {
+      const username = interaction.options.getString('username').replace(/^@/, '').toLowerCase();
+      if (!/^[a-z0-9_]\w{3,24}$/.test(username)) return interaction.editReply({ embeds: [errorEmbed('That is not a valid Twitch username.')] });
+      const getText = (ep) => fetch(`https://decapi.me/twitch/${ep}/${encodeURIComponent(username)}`).then(r => r.ok ? r.text() : null).catch(() => null);
+
+      const avatar = await getText('avatar');
+      if (!avatar || !avatar.startsWith('http')) return interaction.editReply({ embeds: [errorEmbed('Twitch user not found.')] });
+
+      if (sub === 'avatar') {
+        return interaction.editReply({ embeds: [embed(`📺 ${username}'s avatar`).setImage(avatar)] });
+      }
+
+      if (sub === 'user') {
+        const [accountage, followcount, game, title, viewercount] = await Promise.all([
+          getText('accountage'), getText('followcount'), getText('game'), getText('title'), getText('viewercount'),
+        ]);
+        const offline = !viewercount || /offline/i.test(viewercount);
+        return interaction.editReply({ embeds: [embed(`📺 ${username}`, [
+          `**Status:** ${offline ? 'offline' : `live with ${viewercount} viewers`}`,
+          !offline && game ? `**Playing:** ${game}` : '',
+          !offline && title ? `**Title:** ${title.slice(0, 200)}` : '',
+          followcount && !isNaN(Number(followcount)) ? `**Followers:** ${Number(followcount).toLocaleString()}` : '',
+          accountage ? `**Account age:** ${accountage}` : '',
+          `https://twitch.tv/${username}`,
+        ].filter(Boolean).join('\n')).setThumbnail(avatar)] });
+      }
+    }
+
+    if (group === 'github') {
+      if (sub === 'user') {
+        const username = interaction.options.getString('username');
+        const u = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, { headers: { 'User-Agent': 'FqceTool' } }).then(r => r.ok ? r.json() : null).catch(() => null);
+        if (!u) return interaction.editReply({ embeds: [errorEmbed('GitHub user not found.')] });
+        return interaction.editReply({ embeds: [embed(`🐙 ${u.login}${u.name ? ` (${u.name})` : ''}`, [
+          u.bio ? `${u.bio.slice(0, 300)}\n` : '',
+          `**Followers:** ${u.followers?.toLocaleString() ?? '?'}`,
+          `**Following:** ${u.following?.toLocaleString() ?? '?'}`,
+          `**Public repos:** ${u.public_repos?.toLocaleString() ?? '?'}`,
+          `**Joined:** ${u.created_at ? `<t:${Math.floor(new Date(u.created_at).getTime() / 1000)}:D>` : '?'}`,
+          u.html_url || '',
+        ].filter(Boolean).join('\n')).setThumbnail(u.avatar_url || null)] });
       }
     }
 
